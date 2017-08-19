@@ -5,3 +5,10 @@ notifications:
   email:
     on_success: never
     on_failure: never
+deploy:
+  provider: heroku
+  api_key:
+    secure: fFhtsIj4QUIKFUDESjFEMJllGgqcXTtTfszmrtutVr/CDtEu99u7KdkM6QTzrv4mI0+BKGtiYQjt4O6ruEcO4HNDZiLnul6akRkQulQ92QTvvJPa7WVjg8XbMmAeW0qwiF7GXxupog/hPF2uQRJB3eRAZfWIQWAjeiAvfXQk/Z0dm3W4j/ZTViiPREv4JieY1rWjf/HfXFhCThyQnTzSoxT4YRd9j711uXU+zJTA+UyJNW1LOGdY4G5oN1+YbXUEtvhCvvOQCVLVLGKVjYl7AI8DZ5t7Grm2elu5pGhQKezp+RDLJ1uVeeWgq+GQ3PECPAemtxa69ApPKcG4bMUL2VKChNPmIv0Awh047o+yVHIJKKmiMCQ4W4F6/1lDpffbFev4kSZ3WiuSmM3fKWRi2CBZzJLIj6QQvQBJhtMTgj6Ak7iWKl527X7b3MKPuPnznwLy7QBq041BkqhNVGfiRfObvFZ8MBJQfrBD8j22j5mGJhrxmEFQnCeC+v0J6WIV+uIoCD9d/qf96TpQfR/WBYdMkP2pUxUo38FdKrQmB1DdLXQRJCqMJxgOV2FvivLPLImg8JSJHJdOElSRtL8to1QP8crE2yXNVU7Tn6RxPtCYQVF3BRT7SKl+RXyH2fx3I6JQxbg1trfe7QrCXBPwogZADPLB6bJvzZHDyYB58N4=
+  app: varjo-oodi-api
+  on:
+    repo: varjo-oodi/kurssim.me-backend
