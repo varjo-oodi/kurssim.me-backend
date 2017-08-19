@@ -4,11 +4,13 @@ const RequestService = require("../services/RequestService")
 module.exports = {
   async getAll(req, res, next) {
     try {
-      const courses = await RequestService.get({
-        // url: "opas=5323",
-        url: "nimiTaiTunniste=TKT&opas=5323&lukukausi=135",        
+      const bachelorCourses = await RequestService.get({
+        url: "opas=5323",
       })
-      res.json({ courses, })
+      const masterCourses = await RequestService.get({
+        url: "opas=5351",
+      })
+      res.json({ bachelorCourses, masterCourses, })
     } catch (err) {
       next(err)
     }
