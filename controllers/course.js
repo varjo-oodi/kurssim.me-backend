@@ -92,6 +92,7 @@ function combineStudyEvents(opintoniEvent, oodiEvent) {
 
 function joinOodiCoursesToOpintoni(opintoniCourses, oodiCourses) {
   return opintoniCourses.map(opintoniCourse => {
+    // Find the oodi opintokohde with the same tag
     const oodiCourse = oodiCourses.find(c => c.opintokohde.opintokohteenTunniste === opintoniCourse.tag)
     const combinedCourse = {
       id: oodiCourse.opintokohde.opintokohdeId,
@@ -100,7 +101,9 @@ function joinOodiCoursesToOpintoni(opintoniCourses, oodiCourses) {
       type: opintoniCourse.type,
       credits: oodiCourse.opintokohde.laajuusOp,
       events: opintoniCourse.events.map(opintoniEvent => {
+        // Parse id from the link -> https://courses.helsinki.fi/fi/tkt10003/119284733 -> 119284733
         const eventId = parseInt(opintoniEvent.link.substring(opintoniEvent.link.lastIndexOf("/") + 1))
+        // Find the oodi event with the same id
         const oodiEvent = oodiCourse.opetustapahtumat.find(event => event.opetustapahtumaId === eventId)
         if (oodiEvent) {
           return combineStudyEvents(opintoniEvent, oodiEvent)          
@@ -117,9 +120,9 @@ function joinOodiCoursesToOpintoni(opintoniCourses, oodiCourses) {
 module.exports = {
   async getAll(req, res, next) {
     try {
-      const scrapedCourses = await ScraperService.getTKTCourses()
+      const opintoniCourses = await ScraperService.getTKTCourses()
       const oodiCourses = await RequestService.getTKTCourses()
-      const combinedCourses = joinOodiCoursesToOpintoni(scrapedCourses, oodiCourses)
+      const combinedCourses = joinOodiCoursesToOpintoni(opintoniCourses, oodiCourses)
       res.json({ courses: combinedCourses })
     } catch (err) {
       next(err)
