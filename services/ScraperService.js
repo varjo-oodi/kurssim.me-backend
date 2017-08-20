@@ -26,7 +26,7 @@ module.exports = {
           name: "td.views-field-title-field",
           type: "td.views-field-field-imp-reference-to-courses-field-course-type-of-teaching",
           format: "td.views-field-field-imp-method-of-study",
-          startDate: "td.views-field-field-imp-begin-date",
+          opintoniStartDate: "td.views-field-field-imp-begin-date",
           teachers: {
             selector: "td.views-field-field-imp-teacher",
             convert: x => x.split(", ")
@@ -36,7 +36,6 @@ module.exports = {
     })
      // There is sometimes empty rows (<tr>) inside the html list because of lazy coding on their part
     .then(page => page.courses.filter(course => course.link))
-    // Turn 
     // Combine courses with same tag into one course
     .then(courses => {
       const processedTags = []

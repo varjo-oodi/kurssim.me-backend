@@ -82,6 +82,7 @@ function combineStudyEvents(opintoniEvent, oodiEvent) {
     opintoniLink: opintoniEvent.link,
     credits: oodiEvent.laajuusOp,
     open: oodiEvent.ilmoittautumiskelpoinen,
+    opintoniStartDate: opintoniEvent.opintoniStartDate,
     startDate: oodiEvent.alkuPvm,
     endDate: oodiEvent.loppuPvm,
     enrolmentStartDate: oodiEvent.ilmAlkPvm,
