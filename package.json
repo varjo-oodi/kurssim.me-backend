@@ -29,6 +29,6 @@
     "morgan": "^1.8.2",
     "node-fetch": "^1.7.2",
     "nodemon": "^1.11.0",
-    "osmosis": "^1.1.4"
+    "scrape-it": "^3.3.2"
   }
 }

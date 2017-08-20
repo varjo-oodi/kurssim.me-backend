@@ -10,7 +10,8 @@ module.exports = {
   async getAll(req, res, next) {
     try {
       const scrapedCourses = await ScraperService.getTKTCourses()
-      console.log(scrapedCourses.filter(course => course.number === "TKT10003"))
+      // console.log(scrapedCourses)
+      // console.log(scrapedCourses.filter(course => course.number === "TKT10003"))
       // console.log(scrapedCourses)
       // const courses = await RequestService.get({
       //   url: "vastuuorganisaatio=1000000921", // on koko TKTn laitos
