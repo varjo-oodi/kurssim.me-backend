@@ -119,7 +119,7 @@ module.exports = {
       const scrapedCourses = await ScraperService.getTKTCourses()
       const oodiCourses = await RequestService.getTKTCourses()
       const combinedCourses = joinOodiCoursesToOpintoni(scrapedCourses, oodiCourses)
-      res.json({ combinedCourses })
+      res.json({ courses: combinedCourses })
     } catch (err) {
       next(err)
     }
