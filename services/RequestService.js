@@ -1,34 +1,24 @@
 
 const fetch = require("node-fetch")
 
-let cachedGets = {}
-
-function getFromCache(params) {
-  if (cachedGets[params.url] && cachedGets[params.url].timeStamp < Date.now() + 30 * 60 * 1000) { // 30 min
-    return cachedGets[params.url].result
-  }
-  return undefined
-}
-
-function setToCache(params, json) {
-  cachedGets[params.url] = {}
-  cachedGets[params.url].result = json
-  cachedGets[params.url].timeStamp = Date.now()
-}
-
 module.exports = {
+  getTKTCourses() {
+    return Promise.all([
+      this.get({ url: "vastuuorganisaatio=1000000921" }), // Tietojenkäsittelytieteen laitos
+      this.get({ url: "vastuuorganisaatio=116716376" }), // Tietojenkäsittelytieteen kandiohjelma
+      this.get({ url: "vastuuorganisaatio=116738259" }), // Tietojenkäsittelytieteen maisteriohjelma
+      this.get({ url: "vastuuorganisaatio=116710672" }), // Datatieteen maisteriohjelma
+    ])
+    // Combine 4 lists into one giant list (15k lines)
+    .then(orgs => orgs.reduce((acc, org) => [...acc, ...org], []))
+  },
   get(params) {
-    const cached = getFromCache(params)
-    if (cached) return cached
     return fetch(`${process.env.WEBOODI_API_URL}/hae?${params.url}`, {
       method: "get",
       headers: {
         Accept: "application/json",
       }
-    }).then(res => res.json())
-    .then(json => {
-      setToCache(params, json)
-      return json
     })
+    .then(res => res.json())
   }
 }
