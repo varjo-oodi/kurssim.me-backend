@@ -109,7 +109,7 @@ const joinOodiCoursesToOpintoni = (opintoniCourses, oodiCourses) => (
           return combineStudyEvents(opintoniEvent, oodiEvent)
         } else {
           // This means that the Opintoni-event isn't in Weboodi most probably because it has expired
-          return { ...opintoniEvent, expired: true }
+          return { ...opintoniEvent, id: eventId, expired: true }
         }
       })
 
