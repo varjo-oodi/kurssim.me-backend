@@ -20,3 +20,10 @@ class CourseItem(scrapy.Item):
     opintoni_url = scrapy.Field()
     oodi_url = scrapy.Field()
     teachers = scrapy.Field()
+
+    groups = scrapy.Field()
+    # enrollment_start = scrapy.Field()
+    # enrollment_end = scrapy.Field()
+    # short_description = scrapy.Field()
+    # schedule = scrapy.Field() # List of locations of lectures etc.
+    # description = scrapy.Field() # Long block of text in most cases

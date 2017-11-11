@@ -3,12 +3,10 @@ import scrapy
 from hy_scraper.items import CourseItem
 
 def strip(text):
-  if text: return text.strip()
-  else: return ''
+  return text.strip() if text else ''
 
 def strip_list(text):
-  if text: return text.strip()
-  else: return ''
+  return [strip(x) for x in text.split(',')]
 
 # Eg. '\r\r10.10.17\r\n        klo 09.00-\r\r'
 def strip_date(text):
@@ -25,13 +23,13 @@ def strip_date_range(text):
 
 # https://gist.github.com/douglasmiranda/2174255
 def parseInt(string):
-    return int(''.join([x for x in string if x.isdigit()]))
+  return int(''.join([x for x in string if x.isdigit()])) if string else ''
 
 class OpintoniSpider(scrapy.Spider):
   name = 'opintoni_spider'
   start_urls = [
-    'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-kandiohjelma-1922?search=&academic_year=2017%20-%202018',
-    # 'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-maisteriohjelma-1929?search=&academic_year=2017%20-%202018',
+    # 'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-kandiohjelma-1922?search=&academic_year=2017%20-%202018',
+    'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-maisteriohjelma-1929?search=&academic_year=2017%20-%202018'
     # 'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/datatieteen-maisteriohjelma-1931?search=&academic_year=2017%20-%202018'
   ]
   start_fields = ['tkt_kandi', 'tkt_maisteri', 'data_maisteri']
@@ -44,15 +42,15 @@ class OpintoniSpider(scrapy.Spider):
         'opintoni_url': response.urljoin(tr.css('td.views-field-title-field a ::attr(href)').extract_first().strip()),
         'type': tr.css('td.views-field-field-imp-reference-to-courses-field-course-type-of-teaching ::text').extract_first().strip(),
         'format': tr.css('td.views-field-field-imp-method-of-study ::text').extract_first().strip(),
-        'teachers': strip(tr.css('td.views-field-field-imp-teacher ::text').extract_first())
+        'teachers': strip_list(tr.css('td.views-field-field-imp-teacher ::text').extract_first())
       }
       url_chunks = course_dict['opintoni_url'].split('/')
       course_dict['id'] = parseInt(url_chunks[len(url_chunks) - 1])
       # print(course_dict)
       yield response.follow(course_dict['opintoni_url'], self.parse_opintoni_course, meta={'course': course_dict})
       
-    next_url = response.urljoin(response.css('li.pager__next a::attr(href)').extract_first().strip())
-    yield response.follow(next_url) # next page with 'Seuraava'!
+    next_url = response.urljoin(strip(response.css('li.pager__next a::attr(href)').extract_first()))
+    yield response.follow(next_url) # next page with 'Seuraava'
 
   def parse_opintoni_course(self, response):
     course = response.meta['course']
@@ -90,7 +88,7 @@ class OpintoniSpider(scrapy.Spider):
     course_dates = strip_date_range(info_trs[3].css('td')[1].css('::text').extract_first())
     start_date = course_dates[0]
     end_date = course_dates[1] if len(course_dates) > 1 else ''
-    print('credits: {} , date: {}'.format(credits, course_dates))
+    # print('credits: {} , date: {}'.format(credits, course_dates))
 
     group_table = response.css('table.kll')
     groups = self.scrape_oodi_groups(group_table)
@@ -98,6 +96,7 @@ class OpintoniSpider(scrapy.Spider):
     course['credits'] = credits
     course['start_date'] = start_date
     course['end_date'] = end_date
+    course['groups'] = groups
     print(groups)
     yield CourseItem(course)
 
@@ -109,11 +108,12 @@ class OpintoniSpider(scrapy.Spider):
       if i == 0: continue
       blocks = group.xpath('*')
       first_block = blocks[0]
-      # Containts enrolled/max as string '50/50'
+
+      # Contains enrolled/max as string eg. '50/50' or '0/-'
       enrollment = first_block.css('td[width="14%"]::text').extract_first().strip()
       enrollment_chunks = enrollment.split('/')
-      enrolled = enrollment_chunks[0]
-      enrollment_max = enrollment_chunks[1]
+      enrolled = parseInt(enrollment_chunks[0])
+      enrollment_max = parseInt(enrollment_chunks[1])
 
       # Contains two strings with enrollment dates:
       # ['02.10.17\r\n        klo 09.00-', '15.12.17\r\n        klo 23.59']
@@ -125,6 +125,7 @@ class OpintoniSpider(scrapy.Spider):
       group_name = sblock.css('td[width="32%"]::text').extract_first().strip()
       # Group has a teacher or it's empty eg. Ryhmä 99
       group_teacher = strip(sblock.css('td[width="32%"] a::text').extract_first())
+
       schedule_table = sblock.css('td[width="36%"] table[width="100%"]')
       # Schedule is inside this list as non-empty strings:
       # ['10.11.17', '', 'pe 10.15-12.00', '' ...]
