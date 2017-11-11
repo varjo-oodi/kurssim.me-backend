@@ -7,3 +7,11 @@
 4) Run the development server `npm run nodemon`
 
 http://localhost:8000/course
+
+## Scraper
+
+### How to run
+1) Install scrapy: `pip install scrapy` (or `pip3` if you have both Python2 and Python3)
+2) Run: `scrapy crawl opintoni_spider`
+
+This will start the scraper and output the courses into a folder `output` as line-delimited json.
