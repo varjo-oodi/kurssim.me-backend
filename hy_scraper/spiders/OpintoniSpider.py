@@ -10,6 +10,41 @@ def strip_list(text):
   if text: return text.strip()
   else: return ''
 
+def scrape_oodi_info(res):
+  top_section = res.css('section#legacy-page-wrapper').xpath('*/table')
+  info_trs = top_section[0].css('tr')
+  # 3 has the Credits
+  credits = info_trs[2].css('td')[1].css('::text').extract_first().strip()
+  # 5 has the Date
+  course_date = info_trs[4].css('td')[1].css('::text').extract_first().strip()
+
+def scrape_groups(table):
+  groups = table.xpath('*')
+  for i, group in enumerate(groups):
+    if i == 0 continue
+    blocks = group.xpath('*')
+    first_block = blocks[0]
+    # Containts enrolled/max as string '50/50'
+    enrollment = first_block.css('td[width="14%"]::text').extract_first().strip()
+    # Contains two strings with enrollment dates:
+    # ['02.10.17\r\n        klo 09.00-', '15.12.17\r\n        klo 23.59']
+    enroll_date_blocks = first_block.css('td[nowrap]::text').extract()
+    sblock = blocks[1]
+    group_name = sblock.css('td[width="32%"]::text').extract_first().strip()
+    # Or none
+    group_teacher = sblock.css('td[width="32%"] a::text').extract_first().strip()
+    schedule_table = sblock.css('td[width="36%"] table[width="100%"]')
+    # Schedule is inside this list as non-empty strings:
+    # ['10.11.17', '', 'pe 10.15-12.00', '' ...]
+    schedule_blocks = schedule_table.css('td::text').extract()
+    # Classrooms are embedded inside inputs as values
+    schedule_classrooms = schedule_table.css('input[type=SUBMIT] ::attr(value)').extract()
+    # Language is in the last 'td' block as text
+    tds = sblock.css('td')
+    # IF len(tds) > 7
+    languages = tds[len(tds) - 1].css('::text').extract()
+    group_language = languages[1].strip()
+
 class OpintoniSpider(scrapy.Spider):
   name = 'opintoni_spider'
   start_urls = [
