@@ -1,5 +1,6 @@
 import scrapy
 
+from scrapy.http.request import Request
 from hy_scraper.items import CourseItem
 
 def strip(text):
@@ -16,10 +17,27 @@ def strip_date(text):
 # Eg. '\r\n                            30.10.2017 -19.11.2017\r\n                        '
 # Or: '\r\n                            30.10.2017\r\n                        '
 def strip_date_range(text):
-  chunks = strip(text).split('-')
-  if len(chunks) == 1:
-    return [strip(chunks[0])]
-  return [strip(chunks[0]), strip(chunks[1])]
+  return [strip(x) for x in strip(text).split('-')]
+  # chunks = strip(text).split('-')
+  # if len(chunks) == 1:
+  #   return [strip(chunks[0])]
+  # return [strip(chunks[0]), strip(chunks[1])]
+
+# Eg. ['\r\n                \r\n                08.11.17\r\n                klo 09.00-', '\r\n                28.11.17\r\n                klo 23.59\r\n                \r\n                \r\n                \r\n            ']
+def strip_date_chunks(chunks):
+  return [strip_date(date) for date in chunks]
+
+# Eg. '5 op' or ' 5 op / 0 ov '
+def strip_credits(text):
+  return parseInt(text.split('op')[0])
+
+def get_enrollment_dates(dates, groups):
+  if len(dates) == 2:
+    return dates
+  elif len(groups) > 0:
+    # All groups if course doesn't have dates should have enrollment_dates...
+    return [groups[0]['enrollment_start_date'], groups[0]['enrollment_end_date']]
+  return []
 
 # https://gist.github.com/douglasmiranda/2174255
 def parseInt(string):
@@ -28,15 +46,20 @@ def parseInt(string):
 class OpintoniSpider(scrapy.Spider):
   name = 'opintoni_spider'
   start_urls = [
-    # 'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-kandiohjelma-1922?search=&academic_year=2017%20-%202018',
-    'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-maisteriohjelma-1929?search=&academic_year=2017%20-%202018'
-    # 'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/datatieteen-maisteriohjelma-1931?search=&academic_year=2017%20-%202018'
+    'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-kandiohjelma-1922?search=&academic_year=2017%20-%202018',
+    'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/tietojenk%C3%A4sittelytieteen-maisteriohjelma-1929?search=&academic_year=2017%20-%202018',
+    'https://courses.helsinki.fi/fi/search/results/field_imp_organisation/matemaattis-luonnontieteellinen-tiedekunta-942/field_imp_organisation/datatieteen-maisteriohjelma-1931?search=&academic_year=2017%20-%202018'
   ]
   start_fields = ['tkt_kandi', 'tkt_maisteri', 'data_maisteri']
+
+  def start_requests(self):
+    for i, url in enumerate(self.start_urls):
+      yield Request(url, self.parse, meta={'study_field': self.start_fields[i]})
 
   def parse(self, response):
     for tr in response.css('tbody tr'):
       course_dict = {
+        'study_field': response.meta['study_field'],
         'tag': tr.css('td.views-field-field-imp-reference-to-courses-field-course-course-number ::text').extract_first().strip(),
         'name': tr.css('td.views-field-title-field a ::text').extract_first().strip(),
         'opintoni_url': response.urljoin(tr.css('td.views-field-title-field a ::attr(href)').extract_first().strip()),
@@ -83,21 +106,31 @@ class OpintoniSpider(scrapy.Spider):
     top_tables = response.css('section#legacy-page-wrapper').xpath('*/table//table')
     info_trs = top_tables[0].css('tr')
     # 3 has the Credits
-    credits = parseInt(info_trs[1].css('td')[1].css('::text').extract_first().strip())
+    credits = strip_credits(info_trs[1].css('td')[1].css('::text').extract_first())
     # 5 has the Date
     course_dates = strip_date_range(info_trs[3].css('td')[1].css('::text').extract_first())
     start_date = course_dates[0]
     end_date = course_dates[1] if len(course_dates) > 1 else ''
     # print('credits: {} , date: {}'.format(credits, course_dates))
 
+    # Not all courses have groups eg. exams
     group_table = response.css('table.kll')
     groups = self.scrape_oodi_groups(group_table)
+
+    # Funnily enough this should be an unique element
+    main_dates = strip_date_chunks(response.css('td[width="13%"] td[nowrap]::text').extract())
+    # If main_dates are empty use group dates for enrollment dates
+    main_dates = get_enrollment_dates(main_dates, groups)
+    enrollment_start_date = main_dates[0] if len(main_dates) == 2 else ''
+    enrollment_end_date = main_dates[1] if len(main_dates) == 2 else ''
 
     course['credits'] = credits
     course['start_date'] = start_date
     course['end_date'] = end_date
+    course['enrollment_start_date'] = enrollment_start_date
+    course['enrollment_end_date'] = enrollment_end_date
     course['groups'] = groups
-    print(groups)
+    # print(groups)
     yield CourseItem(course)
 
   def scrape_oodi_groups(self, table):
@@ -117,9 +150,9 @@ class OpintoniSpider(scrapy.Spider):
 
       # Contains two strings with enrollment dates:
       # ['02.10.17\r\n        klo 09.00-', '15.12.17\r\n        klo 23.59']
-      enrollment_date_blocks = first_block.css('td[nowrap]::text').extract()
-      enrollment_start_date = strip_date(enrollment_date_blocks[0])
-      enrollment_end_date = strip_date(enrollment_date_blocks[1])
+      enrollment_dates = strip_date_chunks(first_block.css('td[nowrap]::text').extract())
+      enrollment_start_date = enrollment_dates[0] if len(enrollment_dates) == 2 else ''
+      enrollment_end_date = enrollment_dates[1] if len(enrollment_dates) == 2 else ''
 
       sblock = blocks[1]
       group_name = sblock.css('td[width="32%"]::text').extract_first().strip()
