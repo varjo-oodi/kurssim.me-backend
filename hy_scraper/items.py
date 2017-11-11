@@ -13,6 +13,10 @@ class CourseItem(scrapy.Item):
     name = scrapy.Field()
     type = scrapy.Field()
     format = scrapy.Field()
+    credits = scrapy.Field()
+    start_date = scrapy.Field()
+    end_date = scrapy.Field()
+
     opintoni_url = scrapy.Field()
     oodi_url = scrapy.Field()
     teachers = scrapy.Field()
