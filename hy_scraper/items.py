@@ -14,4 +14,5 @@ class CourseItem(scrapy.Item):
     type = scrapy.Field()
     format = scrapy.Field()
     opintoni_url = scrapy.Field()
+    oodi_url = scrapy.Field()
     teachers = scrapy.Field()
