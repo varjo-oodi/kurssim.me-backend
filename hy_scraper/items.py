@@ -8,5 +8,10 @@
 import scrapy
 
 class CourseItem(scrapy.Item):
+    id = scrapy.Field()
+    tag = scrapy.Field()
     name = scrapy.Field()
-    label = scrapy.Field()
+    type = scrapy.Field()
+    format = scrapy.Field()
+    opintoni_url = scrapy.Field()
+    teachers = scrapy.Field()
