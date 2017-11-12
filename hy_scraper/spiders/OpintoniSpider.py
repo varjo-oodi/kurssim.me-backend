@@ -1,6 +1,5 @@
 import scrapy
 
-from scrapy.http.request import Request
 from hy_scraper.items import CourseItem
 
 def strip(text):
@@ -41,7 +40,8 @@ def get_enrollment_dates(dates, groups):
 
 # https://gist.github.com/douglasmiranda/2174255
 def parseInt(string):
-  return int(''.join([x for x in string if x.isdigit()])) if string else ''
+  numbers = ''.join([x for x in string if x.isdigit()])
+  return int(numbers) if numbers else ''
 
 class OpintoniSpider(scrapy.Spider):
   name = 'opintoni_spider'
@@ -54,7 +54,7 @@ class OpintoniSpider(scrapy.Spider):
 
   def start_requests(self):
     for i, url in enumerate(self.start_urls):
-      yield Request(url, self.parse, meta={'study_field': self.start_fields[i]})
+      yield scrapy.Request(url, self.parse, meta={'study_field': self.start_fields[i]})
 
   def parse(self, response):
     for tr in response.css('tbody tr'):
@@ -73,7 +73,7 @@ class OpintoniSpider(scrapy.Spider):
       yield response.follow(course_dict['opintoni_url'], self.parse_opintoni_course, meta={'course': course_dict})
       
     next_url = response.urljoin(strip(response.css('li.pager__next a::attr(href)').extract_first()))
-    yield response.follow(next_url) # next page with 'Seuraava'
+    yield response.follow(next_url, meta={'study_field': response.meta['study_field']}) # next page with 'Seuraava'
 
   def parse_opintoni_course(self, response):
     course = response.meta['course']
