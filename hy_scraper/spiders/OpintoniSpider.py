@@ -70,7 +70,7 @@ class OpintoniSpider(scrapy.Spider):
       url_chunks = course_dict['opintoni_url'].split('/')
       course_dict['id'] = parseInt(url_chunks[len(url_chunks) - 1])
       # print(course_dict)
-      yield response.follow(course_dict['opintoni_url'], self.parse_opintoni_course, meta={'course': course_dict})
+      yield response.follow(course_dict['opintoni_url'], self.parse_opintoni_course, dont_filter=True, meta={'course': course_dict})
       
     next_url = response.urljoin(strip(response.css('li.pager__next a::attr(href)').extract_first()))
     yield response.follow(next_url, meta={'study_field': response.meta['study_field']}) # next page with 'Seuraava'
@@ -97,7 +97,7 @@ class OpintoniSpider(scrapy.Spider):
     schedule = 8 # ? list of lectures if luentoKurssi, date of exam if tentti
     moodle_url = 10 # ?
 
-    yield response.follow(course['oodi_url'], self.parse_oodi_course, meta={'course': course})
+    yield response.follow(course['oodi_url'], self.parse_oodi_course, dont_filter=True, meta={'course': course})
 
   # This is nightmare. Weboodi is crap, inside out. This is the logic for extracting the course information.
   def parse_oodi_course(self, response):
