@@ -1,4 +1,5 @@
 import scrapy
+import re
 
 from hy_scraper.items import CourseItem
 
@@ -25,6 +26,14 @@ def strip_date_range(text):
 # Eg. ['\r\n                \r\n                08.11.17\r\n                klo 09.00-', '\r\n                28.11.17\r\n                klo 23.59\r\n                \r\n                \r\n                \r\n            ']
 def strip_date_chunks(chunks):
   return [strip_date(date) for date in chunks]
+
+# Eg. ['10.11.17\r\n                                    ', '\r\n                                    \xa0\xa0\xa0\xa0pe\xa010.15-12.00\xa0\r\n                                    \n\n\n', '\n', '\n\r\n                                    ', '\r\n                                    \t']
+# Returns: '10.11.17 pe 10.15-12.00'
+def strip_and_join_date_chunks(chunks):
+  # Joins and strips the chunks together
+  joined = ' '.join([strip(x) for x in chunks])
+  # Replaces all non-alphanumeric characters with whitespace : 'pe\xa010.15-12.00' -> 'pe 10.15-12.00'
+  return strip(re.sub('[^a-zA-Z0-9-_*.]', ' ', joined))
 
 # Eg. '5 op' or ' 5 op / 0 ov '
 def strip_credits(text):
@@ -162,17 +171,21 @@ class OpintoniSpider(scrapy.Spider):
       schedule_table = sblock.css('td[width="36%"] table[width="100%"]')
       # Schedule is inside this list as non-empty strings:
       # ['10.11.17', '', 'pe 10.15-12.00', '' ...]
-      schedule_blocks = schedule_table.css('td::text').extract()
+      schedule_blocks = schedule_table.css('td')
+      schedule = []
+      for schedule_block in schedule_blocks:
+        time = strip_and_join_date_chunks(schedule_block.css('::text').extract())
+        classroom = strip(schedule_block.css('input[type=SUBMIT] ::attr(value)').extract_first())
+        schedule.append({
+          'time': time,
+          'classroom': classroom
+        })
+
       # Classrooms are embedded inside inputs as values
       schedule_classrooms = schedule_table.css('input[type=SUBMIT] ::attr(value)').extract()
-      # Language is in the last 'td' block as text
-      tds = sblock.css('td')
-      # IF len(tds) > 7
-      if len(tds) > 7:
-        languages = tds[len(tds) - 1].css('::text').extract()
-        group_languages = strip(languages[1]) if len(languages) > 1 else ''
-      else:
-        group_languages = ''
+      # If there is a 'font' element then group has language inside that 'td'-block
+      # TODO can it be a list?
+      lang = strip(sblock.xpath('.//td[font]').css('td::text').extract_first())
 
       group_dict = {
         'enrolled': enrolled,
@@ -181,8 +194,8 @@ class OpintoniSpider(scrapy.Spider):
         'enrollment_end_date': enrollment_end_date,
         'group_name': group_name,
         'group_teacher': group_teacher,
-        'schedule': [],
-        'group_languages': group_languages
+        'schedule': schedule,
+        'group_languages': lang
       }
       group_list.append(group_dict)
 
