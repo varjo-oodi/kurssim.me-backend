@@ -9,6 +9,9 @@ def strip(text):
 def strip_list(text):
   return [strip(x) for x in text.split(',')]
 
+def sub(text):
+  return re.sub('[^a-zA-Z0-9-_*.]', ' ', text)
+
 # Eg. '\r\r10.10.17\r\n        klo 09.00-\r\r'
 def strip_date(text):
   chunks = strip(text).split(' ')
@@ -28,12 +31,15 @@ def strip_date_chunks(chunks):
   return [strip_date(date) for date in chunks]
 
 # Eg. ['10.11.17\r\n                                    ', '\r\n                                    \xa0\xa0\xa0\xa0pe\xa010.15-12.00\xa0\r\n                                    \n\n\n', '\n', '\n\r\n                                    ', '\r\n                                    \t']
-# Returns: '10.11.17 pe 10.15-12.00'
-def strip_and_join_date_chunks(chunks):
+# Returns: ['10.11.17', 'pe', '10.15-12.00']
+def strip_group_time_chunks(chunks):
   # Joins and strips the chunks together
   joined = ' '.join([strip(x) for x in chunks])
   # Replaces all non-alphanumeric characters with whitespace : 'pe\xa010.15-12.00' -> 'pe 10.15-12.00'
-  return strip(re.sub('[^a-zA-Z0-9-_*.]', ' ', joined))
+  subbed = sub(joined)
+  # Splits the string from whitespaces and omits empty strings
+  # '10.11.17 pe 10.15-12.00   ' -> ['10.11.17', 'pe', '10.15-12.00']
+  return [x for x in subbed.split(' ') if len(x) != 0]
 
 # Eg. '5 op' or ' 5 op / 0 ov '
 def strip_credits(text):
@@ -174,10 +180,12 @@ class OpintoniSpider(scrapy.Spider):
       schedule_blocks = schedule_table.css('td')
       schedule = []
       for schedule_block in schedule_blocks:
-        time = strip_and_join_date_chunks(schedule_block.css('::text').extract())
+        time_chunks = strip_group_time_chunks(schedule_block.css('::text').extract())
         classroom = strip(schedule_block.css('input[type=SUBMIT] ::attr(value)').extract_first())
         schedule.append({
-          'time': time,
+          'date': time_chunks[0] if len(time_chunks) > 0 else '',
+          'day': time_chunks[1] if len(time_chunks) > 1 else '',
+          'time': time_chunks[2] if len(time_chunks) > 2 else '',
           'classroom': classroom
         })
 
