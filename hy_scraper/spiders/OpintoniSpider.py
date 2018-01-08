@@ -93,7 +93,7 @@ class OpintoniSpider(scrapy.Spider):
   def parse_opintoni_course(self, response):
     course = response.meta['course']
 
-    courses_info = response.css('span.course-info ::text').extract()
+    # courses_info = response.css('span.course-info ::text').extract()
     # Ridiculously coded course_info element that is the following structure:
     # <span class="course-info">
     #   <a href="/fi/tkt10002" class="GoogleAnalyticsET-processed">TKT10002</a>, Luentokurssi, 5 op,
@@ -108,9 +108,6 @@ class OpintoniSpider(scrapy.Spider):
     # Weboodi URLs are eg. https://weboodi.helsinki.fi/hy/opettaptied.jsp?OpetTap=121540795&Kieli=1
     # And some courses show the link but often if it's in far future, not
     course['oodi_url'] = 'https://weboodi.helsinki.fi/hy/opettaptied.jsp?OpetTap={}&Kieli=1'.format(course['id'])
-
-    schedule = 8 # ? list of lectures if luentoKurssi, date of exam if tentti
-    moodle_url = 10 # ?
 
     yield response.follow(course['oodi_url'], self.parse_oodi_course, dont_filter=True, meta={'course': course})
 

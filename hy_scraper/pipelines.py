@@ -8,18 +8,21 @@
 import json
 import os
 import scrapy
+from scrapy.exporters import JsonItemExporter
 from hy_scraper.items import CourseItem
 
 class CourseJsonPipeline(object):
     def open_spider(self, spider):
-        os.makedirs('output', exist_ok=True)
-        self.file_courses = open('output/hy_courses.json', 'w')
-
+        self.file_courses = open("output/hy_courses.json", 'wb')
+        self.exporter = JsonItemExporter(self.file_courses, encoding='utf-8', ensure_ascii=False)
+        self.exporter.start_exporting()
+ 
     def close_spider(self, spider):
+        self.exporter.finish_exporting()
         self.file_courses.close()
-
+ 
     def process_item(self, item, spider):
         if isinstance(item, CourseItem):
             print(dict(item))
-            line = json.dumps(dict(item)) + "\n"
-            self.file_courses.write(line)
+            self.exporter.export_item(item)
+        return item
