@@ -63,10 +63,10 @@ ROBOTSTXT_OBEY = True
 #    'scrapy.extensions.telnet.TelnetConsole': None,
 #}
 
-FEED_URI = 's3://testaus-bucket/%(name)s/%(time)s.json'
+FEED_URI = 's3://testaus-bucket/hy_courses.json'
 FEED_FORMAT='json'
 FEED_STORAGES_BASE = {
-    's3': 'hy_scraper.storages.CourseS3FeedStorage'
+    's3': 'hy_scraper.feedexport.CourseS3FeedStorage'
 }
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html

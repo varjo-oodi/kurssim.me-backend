@@ -23,6 +23,6 @@ class CourseJsonPipeline(object):
  
     def process_item(self, item, spider):
         if isinstance(item, CourseItem):
-            print(dict(item))
+            # print(dict(item))
             self.exporter.export_item(item)
         return item

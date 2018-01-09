@@ -14,4 +14,5 @@ class CourseS3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         file.seek(0)
-        self.s3_client.put_object(Bucket=BUCKET_NAME, Key=KEY_NAME, Body=file)
+        # self.s3_client.put_object(Bucket=BUCKET_NAME, Key=KEY_NAME, Body=file)
+        self.s3_client.put_object(Bucket=BUCKET_NAME, Key=KEY_NAME, Body=file, ACL='public', Metadata=METADATA)
